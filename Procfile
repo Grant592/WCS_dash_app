@@ -1,1 +1,1 @@
-web: gunicorn falcons-wcs.wsgi 
+web: gunicorn app:server

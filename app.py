@@ -36,7 +36,7 @@ app.layout = html.Div([
             'margin': '10px'
         },
         # Allow multiple files to be uploaded
-        multiple=False
+        multiple=True
     ),
     html.Div(id='wcs-data'),
     #dcc.Graph(id='wcs-heatmap'),
@@ -46,26 +46,44 @@ app.layout = html.Div([
 @app.callback(
     Output('wcs-data', 'children'),
     [Input('upload-data', 'contents')])
-def create_heatmap(csv_file):
-    content_type, content_string = csv_file.split(',')
-    decoded = base64.b64decode(content_string)
-    rolling_calculator = RollingAverage(decoded)
-    rolling_calculator.apply_all_calculations()
+def create_heatmap(csv_files):
+    div_list = []
+    flip_index = 1
+    for csv_file in csv_files:
+        content_type, content_string = csv_file.split(',')
+        decoded = base64.b64decode(content_string)
+        rolling_calculator = RollingAverage(decoded)
+        rolling_calculator.apply_all_calculations()
 
-    calculated_results = {k: pd.DataFrame(v) for k,v in rolling_calculator.results.items()}
-    results_df = pd.concat(calculated_results, axis=1)
-    results_df = results_df.droplevel(0, axis=1)
-    print(results_df)
-    print(results_df.columns)
+        calculated_results = {k: pd.DataFrame(v) for k,v in rolling_calculator.results.items()}
+        results_df = pd.concat(calculated_results, axis=1)
+        results_df = results_df.droplevel(0, axis=1)
+        results_df.reset_index(inplace=True)
+        print(results_df)
+        print(results_df.columns)
+        if flip_index > 0:
+            div_list.append(html.Div(
+                [
+                html.Div([
+                    dash_table.DataTable(
+                        id='table',
+                        columns=[{"name":i, "id":i} for i in results_df.columns],
+                        data=results_df.to_dict('records')
+                    )
+                ], style={'width':'90%', 'display': 'inline-block', 'vertical-align': 'middle', 'textAlign':'center'}
+                ),
+                dcc.Graph(id='graph',
+                     figure= rolling_calculator.plot_heatmap())
+                ],
+                style={'width': '49%', 'display': 'inline-block', 'vertical-align': 'middle'}
+            ))
+
+
     return html.Div([
-        dash_table.DataTable(
-        id='table',
-        columns=[{"name":i, "id":i} for i in results_df.columns],
-        data=results_df.to_dict('records')
-    ),
-        dcc.Graph(id='graph',
-                 figure= rolling_calculator.plot_heatmap())
-    ])
+        div for div in div_list
+        ]
+    )
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)

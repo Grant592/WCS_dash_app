@@ -48,7 +48,6 @@ app.layout = html.Div([
     [Input('upload-data', 'contents')])
 def create_heatmap(csv_files):
     div_list = []
-    flip_index = 1
     for csv_file in csv_files:
         content_type, content_string = csv_file.split(',')
         decoded = base64.b64decode(content_string)
@@ -61,7 +60,7 @@ def create_heatmap(csv_files):
         results_df.reset_index(inplace=True)
         print(results_df)
         print(results_df.columns)
-        if flip_index > 0:
+        if len(csv_files) > 1:
             div_list.append(html.Div(
                 [
                 html.Div([
@@ -70,13 +69,29 @@ def create_heatmap(csv_files):
                         columns=[{"name":i, "id":i} for i in results_df.columns],
                         data=results_df.to_dict('records')
                     )
-                ], style={'width':'90%', 'display': 'inline-block', 'vertical-align': 'middle', 'textAlign':'center'}
+                ], style={'width':'90%', 'display': 'inline-block', 'vertical-align': 'middle', 'textalign':'center'}
                 ),
                 dcc.Graph(id='graph',
                      figure= rolling_calculator.plot_heatmap())
                 ],
                 style={'width': '49%', 'display': 'inline-block', 'vertical-align': 'middle'}
             ))
+        else:
+            div_list.append(html.Div(
+                [
+                html.Div([
+                    dash_table.DataTable(
+                        id='table',
+                        columns=[{"name":i, "id":i} for i in results_df.columns],
+                        data=results_df.to_dict('records')
+                    )
+                ], style={'width':'90%', 'display': 'inline-block', 'vertical-align': 'middle', 'textalign':'center'}
+                ),
+                dcc.Graph(id='graph',
+                     figure= rolling_calculator.plot_heatmap())
+                ],
+            ))
+
 
 
     return html.Div([

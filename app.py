@@ -52,14 +52,17 @@ def create_heatmap(csv_file):
     rolling_calculator = RollingAverage(decoded)
     rolling_calculator.apply_all_calculations()
 
-    interim = {k: pd.DataFrame(v) for k,v in rolling_calulator.results.items()}
-    table = dash_table.DataTable(
-        id='table',
-        columns=[{"name":i, "id":i} for i in rolling_calculator.results.columns],
-        data=rolling_calculator.results.to_dict('records'),
-    )
+    calculated_results = {k: pd.DataFrame(v) for k,v in rolling_calculator.results.items()}
+    results_df = pd.concat(calculated_results, axis=1)
+    results_df = results_df.droplevel(0, axis=1)
+    print(results_df)
+    print(results_df.columns)
     return html.Div([
-        table,
+        dash_table.DataTable(
+        id='table',
+        columns=[{"name":i, "id":i} for i in results_df.columns],
+        data=results_df.to_dict('records')
+    ),
         dcc.Graph(id='graph',
                  figure= rolling_calculator.plot_heatmap())
     ])
